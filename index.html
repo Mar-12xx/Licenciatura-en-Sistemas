@@ -2,221 +2,542 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Licenciatura en Sistemas (UNNOBA)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Malla Curricular - Lic. en Sistemas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Tailwind CSS configuration for dark mode
+    tailwind.config = {
+      darkMode: 'class',
+    }
+  </script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
-
-    body {
-      font-family: 'Roboto', sans-serif;
-      background-color: #f4f6fa;
-      margin: 0;
-      padding: 30px;
-      color: #1f2937;
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 40px;
-      color: #2c3e50;
-      font-weight: 700;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 24px;
-    }
-
-    .year {
-      background: linear-gradient(to bottom right, #e0ecff, #f5faff);
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    }
-
-    .year h2 {
-      font-size: 18px;
-      margin-bottom: 12px;
-      color: #374151;
-      border-bottom: 1px solid #cbd5e1;
-      padding-bottom: 4px;
-    }
-
-    .subject {
-      background-color: #ffffff;
-      border-left: 6px solid #4f46e5;
-      margin: 10px 0;
-      padding: 10px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s ease-in-out;
-      position: relative;
-    }
-
-    .subject:hover {
-      background-color: #e0e7ff;
-    }
-
-    .subject.approved {
-      background-color: #d1fae5;
-      border-left-color: #059669;
-      text-decoration: line-through;
-      color: #065f46;
-    }
-
-    .subject.locked {
-      background-color: #f1f5f9;
-      border-left-color: #9ca3af;
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
-
-    .subject[title]:hover::after {
-      content: attr(title);
+    /* Custom tooltip styling for displaying information on hover */
+    .tooltip::after {
+      content: attr(data-tooltip);
       position: absolute;
-      top: -28px;
-      left: 0;
-      background: #111827;
-      color: #fff;
-      padding: 6px 8px;
-      border-radius: 4px;
+      background: #1f2937; /* Dark gray background */
+      color: white;
+      padding: 6px 10px;
+      border-radius: 6px;
       font-size: 12px;
-      white-space: pre-wrap;
-      max-width: 220px;
-      z-index: 999;
+      white-space: pre-wrap; /* Preserve whitespace and allow line breaks */
+      top: -36px; /* Position above the element */
+      left: 0;
+      display: none; /* Hidden by default */
+      z-index: 50; /* Ensure it's above other content */
+    }
+    .tooltip:hover::after {
+      display: block; /* Show on hover */
     }
   </style>
 </head>
-<body>
-  <h1>Malla Curricular - Lic. en Sistemas (UNNOBA)</h1>
-  <div class="grid" id="malla"></div>
+<body class="dark:bg-gray-900 dark:text-gray-100 bg-gray-100 text-gray-900 font-sans transition-colors">
+  <div class="max-w-7xl mx-auto p-4">
+    <!-- Navigation Bar -->
+    <nav class="mb-10 text-center">
+      <h1 class="text-3xl font-light text-gray-800 dark:text-gray-200 mb-2">Plan de Estudios</h1>
+      <div class="flex justify-center items-center gap-4">
+        <!-- Theme toggle button -->
+        <button id="toggleTheme" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">🌗</button>
+        <!-- Calendar view toggle button -->
+        <button id="verCalendario" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">📆</button>
+        <!-- Progress display text -->
+        <span id="progresoTexto" class="text-sm text-gray-500">0% completado</span>
+<!-- Botones nuevos -->
+<button id="exportarPdf" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">📄 Exportar PDF</button>
+<button id="guardarBackup" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">💾 Backup</button>
+<button id="cargarBackup" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">📂 Cargar</button>
+<input type="file" id="inputBackup" accept="application/json" class="hidden">
+
+        <!-- Reset button - Added as per the JavaScript listener -->
+        <button id="resetear" class="text-red-500 hover:text-red-700 dark:hover:text-red-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">🗑️</button>
+      </div>
+    </nav>
+
+    <!-- Curriculum Grid Container -->
+    
+<div class="w-full bg-gray-200 dark:bg-gray-700 rounded h-4 mb-4">
+  <div id="barraProgreso" class="bg-blue-600 h-4 rounded" style="width: 0%"></div>
+</div>
+<div id="malla" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 min-w-min"></div>
+
+    <!-- Calendar Section -->
+    <div id="calendario" class="hidden mt-6">
+      <h2 class="text-lg font-medium mb-3 text-gray-800 dark:text-gray-200">Horarios</h2>
+      <!-- Form to add new schedule entries -->
+      <form id="formCalendario" class="bg-white dark:bg-gray-800 p-3 rounded mb-3 shadow-md">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input type="text" name="materia" placeholder="Nombre de la materia" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+          <input type="text" name="comision" placeholder="Comisión (opcional)" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <input type="text" name="dia" placeholder="Día (ej. Lunes)" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+          <input type="text" name="hora" placeholder="Horario (ej. 18:00 - 20:00)" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+        </div>
+        <button type="submit" class="mt-4 bg-green-600 hover:bg-green-500 px-4 py-2 rounded text-white font-semibold transition-colors shadow-md">Agregar</button>
+      </form>
+      <!-- List of scheduled classes -->
+      <ul id="listaCalendario" class="space-y-2"></ul>
+    </div>
+
+    <!-- Modal for Subject Details and File Upload -->
+    <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 px-4">
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-md w-full relative border border-gray-200 dark:border-gray-700 shadow-lg transform transition-all scale-95 opacity-0 duration-300" id="modalContent">
+        <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-500 to-green-500 rounded-t-lg"></div>
+        <!-- Close button for the modal -->
+        <button onclick="cerrarModal()" class="absolute top-3 right-3 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 text-2xl font-bold transition-colors">
+          &times;
+        </button>
+        <h3 id="modalTitulo" class="text-xl font-bold text-blue-600 dark:text-blue-300 mb-2">Materia</h3>
+        <p id="modalResumen" class="text-sm mb-4 text-gray-700 dark:text-gray-300">Resumen de la materia.</p>
+        <!-- Textarea for personal notes -->
+        <textarea id="notaPersonal" class="w-full p-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" rows="4" placeholder="Notas personales..."></textarea>
+        <!-- File input for PDF documents -->
+        <input type="file" id="archivoPdf" class="mt-2 block w-full text-sm text-gray-900 dark:text-gray-100 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-700 dark:file:text-blue-300 dark:hover:file:bg-gray-600" accept="application/pdf">
+        <!-- Display area for uploaded files -->
+        <div id="archivosCargados" class="mt-2 text-sm text-gray-700 dark:text-gray-300"></div>
+        <!-- Success message for saving -->
+        <div id="saveMessage" class="hidden mt-2 text-center text-green-600 dark:text-green-400 text-sm font-semibold">Guardado exitosamente!</div>
+        <div class="text-right mt-4">
+          <!-- Button to save notes and files -->
+          <button onclick="guardarNota()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded font-semibold transition-colors shadow-md">Guardar Nota</button>
+          <!-- Button to mark subject as approved/unapproved -->
+          <button onclick="toggleAprobada()" id="btnAprobar" class="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded ml-2 font-semibold transition-colors shadow-md">Marcar como Aprobada</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Confirmation Modal for Reset -->
+    <div id="confirmModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 px-4">
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-sm w-full relative border border-gray-200 dark:border-gray-700 shadow-lg transform transition-all scale-95 opacity-0 duration-300" id="confirmModalContent">
+        <h3 class="text-xl font-bold text-red-600 dark:text-red-300 mb-4">Confirmar Reseteo</h3>
+        <p class="text-gray-700 dark:text-gray-300 mb-6">¿Estás seguro de que deseas borrar todo el progreso, notas, horarios y archivos? Esta acción no se puede deshacer.</p>
+        <div class="flex justify-end gap-3">
+          <button onclick="cancelReset()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded font-semibold transition-colors shadow-md">Cancelar</button>
+          <button onclick="executeReset()" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded font-semibold transition-colors shadow-md">Borrar Todo</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
 
   <script>
-    const materias = {
-      "1er Año": [
-        { id: "intro_prog", nombre: "Intro. a la Programación Imperativa" },
-        { id: "sistemas_org", nombre: "Sistemas y Organizaciones" },
-        { id: "elementos_mate", nombre: "Elementos de Matemática" },
-        { id: "arquitectura", nombre: "Organización y Arquitectura de Computadoras" },
-        { id: "prog_imperativa", nombre: "Programación Imperativa", depende: ["intro_prog"] },
-        { id: "algebra", nombre: "Álgebra y Geometría Analítica" },
-        { id: "analisis_I", nombre: "Análisis Matemático I" },
-        { id: "sis_info", nombre: "Sistemas de Información" },
-        { id: "aspectos_sociales", nombre: "Aspectos Sociales e Institucionales de la Universidad" }
-      ],
-      "2do Año": [
-        { id: "estructura_datos", nombre: "Estructura de Datos", depende: ["prog_imperativa"] },
-        { id: "ing_requisitos", nombre: "Ingeniería de Requisitos", depende: ["sis_info"] },
-        { id: "analisis_II", nombre: "Análisis Matemático II", depende: ["analisis_I"] },
-        { id: "ingles", nombre: "Inglés Técnico" },
-        { id: "proceso_software", nombre: "Proceso de Software", depende: ["ing_requisitos"] },
-        { id: "poo", nombre: "Intro. a la POO", depende: ["prog_imperativa"] },
-        { id: "bdd_I", nombre: "Base de Datos I", depende: ["sis_info"] },
-        { id: "mate_discreta", nombre: "Matemática Discreta" },
-        { id: "redes", nombre: "Redes de Datos", depende: ["arquitectura"] }
-      ],
-      "3er Año": [
-        { id: "poo_full", nombre: "Programación Orientada a Objetos", depende: ["poo"] },
-        { id: "bdd_II", nombre: "Base de Datos II", depende: ["bdd_I"] },
-        { id: "diseno_sistemas", nombre: "Diseño de Sistemas", depende: ["ing_requisitos"] },
-        { id: "so_I", nombre: "Sistemas Operativos I", depende: ["arquitectura"] },
-        { id: "estadistica", nombre: "Probabilidades y Estadística" },
-        { id: "prog_multi", nombre: "Programación Multiplataforma", depende: ["poo_full"] },
-        { id: "prog_func", nombre: "Programación Lógica y Funcional", depende: ["estructura_datos"] },
-        { id: "bdd_III", nombre: "Base de Datos III", depende: ["bdd_II"] },
-        { id: "interfaz", nombre: "Diseño de Interfaz", depende: ["diseno_sistemas"] },
-        { id: "so_II", nombre: "Sistemas Operativos II", depende: ["so_I"] }
-      ],
-      "4to Año": [
-        { id: "concurrente", nombre: "Prog. Distribuida, Concurrente y Paralela", depende: ["estructura_datos"] },
-        { id: "economia", nombre: "Economía y Organizaciones" },
-        { id: "testing", nombre: "Calidad y Testing" },
-        { id: "optativa_I", nombre: "Optativa I" },
-        { id: "optativa_II", nombre: "Optativa II" },
-        { id: "practica", nombre: "Práctica Profesional y Legislación" },
-        { id: "gestion_proj", nombre: "Gestión de Proyectos" },
-        { id: "cc", nombre: "Ciencias de la Computación" }
-      ],
-      "5to Año": [
-        { id: "formulacion", nombre: "Formulación y Evaluación de Proyectos" },
-        { id: "lenguajes", nombre: "Lenguajes y Compiladores" },
-        { id: "ia", nombre: "Inteligencia Computacional" },
-        { id: "data_science", nombre: "Ciencia de Datos" },
-        { id: "tif", nombre: "Trabajo Final" }
-      ]
-    };
+    // Global variable to store the currently selected subject ID
+    let materiaActual = null;
 
-    const materiasPlan = {};
-    for (const lista of Object.values(materias)) {
-      lista.forEach(m => materiasPlan[m.id] = m);
-    }
+    // --- Theme Toggling ---
+    document.getElementById("toggleTheme").addEventListener("click", () => {
+      document.documentElement.classList.toggle("dark");
+    });
 
-    function cargarMalla() {
-      const container = document.getElementById("malla");
-      for (const [anio, listaMaterias] of Object.entries(materias)) {
-        const col = document.createElement("div");
-        col.className = "year";
-        col.innerHTML = `<h2>${anio}</h2>`;
-        listaMaterias.forEach(materia => {
-          const div = document.createElement("div");
-          div.className = "subject";
-          div.textContent = materia.nombre;
-          div.dataset.id = materia.id;
-          if (materia.depende) {
-            div.classList.add("locked");
-            div.title = "Requiere: " + materia.depende.map(id => materiasPlan[id]?.nombre || id).join(", ");
-          }
-          col.appendChild(div);
-        });
-        container.appendChild(col);
+    // --- Calendar Functionality ---
+    // Load calendar data from localStorage, or initialize as empty array
+    const calendario = JSON.parse(localStorage.getItem("calendarioMaterias") || "[]");
+
+    // Toggle visibility of the calendar section
+    document.getElementById("verCalendario").addEventListener("click", () => {
+      const seccion = document.getElementById("calendario");
+      seccion.classList.toggle("hidden");
+      renderCalendario(); // Render calendar entries when shown
+    });
+
+    // Handle form submission for adding new calendar entries
+    document.getElementById("formCalendario").addEventListener("submit", e => {
+      e.preventDefault(); // Prevent default form submission
+      const data = Object.fromEntries(new FormData(e.target).entries()); // Get form data
+      calendario.push(data); // Add new entry to the calendar array
+      localStorage.setItem("calendarioMaterias", JSON.stringify(calendario)); // Save to localStorage
+      e.target.reset(); // Clear form fields
+      renderCalendario(); // Re-render the calendar list
+    });
+
+    // Render (display) the calendar entries
+    function renderCalendario() {
+      const ul = document.getElementById("listaCalendario");
+      ul.innerHTML = ""; // Clear existing list
+      if (calendario.length === 0) {
+        ul.innerHTML = '<li class="text-gray-500 dark:text-gray-400 text-center py-4">No hay horarios agendados.</li>';
+        return;
       }
-    }
-
-    function materiasAprobadas() {
-      return JSON.parse(localStorage.getItem("materiasAprobadas") || "[]");
-    }
-
-    function guardarAprobadas(lista) {
-      localStorage.setItem("materiasAprobadas", JSON.stringify(lista));
-    }
-
-    function actualizarEstado() {
-      const aprobadas = materiasAprobadas();
-      document.querySelectorAll(".subject").forEach(el => {
-        const id = el.dataset.id;
-        const mat = materiasPlan[id];
-        el.classList.remove("approved", "locked");
-        el.removeAttribute("title");
-
-        const deps = mat.depende || [];
-        const depsFaltantes = deps.filter(d => !aprobadas.includes(d));
-
-        if (aprobadas.includes(id)) {
-          el.classList.add("approved");
-        } else if (depsFaltantes.length > 0) {
-          el.classList.add("locked");
-          el.title = "Falta aprobar: " + depsFaltantes.map(d => materiasPlan[d].nombre).join(", ");
-        }
+      calendario.forEach((item, idx) => {
+        const li = document.createElement("li");
+        li.className = "bg-white dark:bg-gray-700 p-3 rounded flex justify-between items-center shadow-sm";
+        li.innerHTML = `
+          <div>
+            <strong class="text-gray-900 dark:text-gray-100">${item.materia}</strong> 
+            <span class="text-gray-600 dark:text-gray-300">(${item.comision || "Sin comisión"})</span><br>
+            <span class='text-sm text-gray-500 dark:text-gray-400'>${item.dia} - ${item.hora}</span>
+          </div>
+          <button onclick="eliminarCalendario(${idx})" class="text-red-600 dark:text-red-400 hover:underline text-sm ml-4">Eliminar</button>
+        `;
+        ul.appendChild(li);
       });
     }
 
-    document.addEventListener("click", e => {
-      const box = e.target.closest(".subject");
-      if (!box || box.classList.contains("locked")) return;
-      const id = box.dataset.id;
-      let aprobadas = materiasAprobadas();
-      if (aprobadas.includes(id)) {
-        aprobadas = aprobadas.filter(i => i !== id);
-      } else {
-        aprobadas.push(id);
+    // Function to delete a calendar entry
+    function eliminarCalendario(index) {
+      calendario.splice(index, 1); // Remove item from array
+      localStorage.setItem("calendarioMaterias", JSON.stringify(calendario)); // Update localStorage
+      renderCalendario(); // Re-render the list
+    }
+
+    // --- Modal Functionality (for Subject Details) ---
+    // Open the modal with a fade-in effect
+    function abrirModal() {
+      const modal = document.getElementById("modal");
+      const modalContent = document.getElementById("modalContent");
+      modal.classList.remove("hidden");
+      // Trigger reflow to ensure transition plays
+      void modalContent.offsetWidth; 
+      modalContent.classList.remove("scale-95", "opacity-0");
+      modalContent.classList.add("scale-100", "opacity-100");
+    }
+
+    // Close the modal with a fade-out effect
+    function cerrarModal() {
+      const modal = document.getElementById("modal");
+      const modalContent = document.getElementById("modalContent");
+      modalContent.classList.remove("scale-100", "opacity-100");
+      modalContent.classList.add("scale-95", "opacity-0");
+      // Hide modal after transition completes
+      modalContent.addEventListener('transitionend', function handler() {
+        modal.classList.add("hidden");
+        modalContent.removeEventListener('transitionend', handler);
+      }, { once: true });
+      document.getElementById("saveMessage").classList.add("hidden"); // Hide save message
+    }
+
+    // Save personal notes and uploaded PDF files
+    function guardarNota() {
+      const notas = JSON.parse(localStorage.getItem("notasPersonales") || "{}");
+      notas[materiaActual] = document.getElementById("notaPersonal").value;
+      localStorage.setItem("notasPersonales", JSON.stringify(notas));
+      
+      // Handle PDF file upload
+      const archivoInput = document.getElementById("archivoPdf");
+      if (archivoInput.files.length > 0) {
+        const file = archivoInput.files[0];
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const archivos = JSON.parse(localStorage.getItem("archivosMaterias") || "{}");
+          if (!archivos[materiaActual]) {
+            archivos[materiaActual] = [];
+          }
+          archivos[materiaActual].push({
+            name: file.name,
+            data: event.target.result // Base64 encoded string of the file
+          });
+          localStorage.setItem("archivosMaterias", JSON.stringify(archivos));
+          renderArchivosCargados(); // Update the list of uploaded files
+          archivoInput.value = ''; // Clear the file input
+        };
+        reader.readAsDataURL(file); // Read file as Data URL
       }
-      guardarAprobadas(aprobadas);
-      actualizarEstado();
+
+      document.getElementById("saveMessage").classList.remove("hidden"); // Show success message
+      setTimeout(() => {
+        cerrarModal(); // Close modal after a short delay
+        renderMalla(); // Re-render the curriculum grid to update subject status
+      }, 800); // Show message for 0.8 seconds
+    }
+
+    // Render (display) uploaded files for the current subject
+    function renderArchivosCargados() {
+      const archivosCargadosDiv = document.getElementById("archivosCargados");
+      archivosCargadosDiv.innerHTML = ""; // Clear existing files
+      const archivos = JSON.parse(localStorage.getItem("archivosMaterias") || "{}");
+      if (archivos[materiaActual] && archivos[materiaActual].length > 0) {
+        const ul = document.createElement("ul");
+        ul.className = "list-disc list-inside space-y-1 mt-2";
+        archivos[materiaActual].forEach((file, index) => {
+          const li = document.createElement("li");
+          li.className = "flex items-center justify-between";
+          li.innerHTML = `
+            <a href="${file.data}" download="${file.name}" class="text-blue-500 hover:underline flex-grow truncate">${file.name}</a>
+            <button onclick="eliminarArchivo(${index})" class="text-red-500 hover:text-red-700 ml-2 text-sm p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900 transition-colors">x</button>
+          `;
+          ul.appendChild(li);
+        });
+        archivosCargadosDiv.appendChild(ul);
+      } else {
+        archivosCargadosDiv.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No hay archivos cargados.</p>';
+      }
+    }
+
+    // Function to delete an uploaded file
+    function eliminarArchivo(index) {
+      const archivos = JSON.parse(localStorage.getItem("archivosMaterias") || "{}");
+      if (archivos[materiaActual]) {
+        archivos[materiaActual].splice(index, 1); // Remove file from array
+        localStorage.setItem("archivosMaterias", JSON.stringify(archivos)); // Update localStorage
+        renderArchivosCargados(); // Re-render the file list
+      }
+    }
+
+    // Toggle subject approval status (mark as approved/unapproved)
+    function toggleAprobada() {
+      let aprobadas = JSON.parse(localStorage.getItem("materiasAprobadas") || "[]");
+      const index = aprobadas.indexOf(materiaActual);
+      if (index > -1) {
+        aprobadas.splice(index, 1); // Remove (unmark) if already approved
+      } else {
+        aprobadas.push(materiaActual); // Add (mark) if not approved
+      }
+      localStorage.setItem("materiasAprobadas", JSON.stringify(aprobadas)); // Update localStorage
+      renderMalla(); // Re-render the curriculum grid
+      cerrarModal(); // Close the modal
+    }
+
+    // --- Curriculum Data ---
+    // Comprehensive list of subjects for the "Licenciatura en Sistemas" program,
+    // extracted from the provided study plan PDF.
+    const materias = {
+      "Primer Año": [
+        { id: "01474", nombre: "Introducción a la Programación Imperativa", resumen: "Conceptos fundamentales de programación imperativa, sintaxis básica y estructuras de control.", creditos: 80 },
+        { id: "01475", nombre: "Sistemas y Organizaciones", resumen: "Introducción a los sistemas de información y su impacto en las organizaciones.", creditos: 64 },
+        { id: "01374", nombre: "Elementos de Matemática", resumen: "Fundamentos matemáticos esenciales para la carrera de sistemas.", creditos: 112 },
+        { id: "01476", nombre: "Organización y Arquitectura de Computadoras", resumen: "Estudio de los componentes y el funcionamiento interno de las computadoras.", creditos: 80 },
+        { id: "00364", nombre: "Programación Imperativa", resumen: "Profundización en la programación imperativa, incluyendo algoritmos y estructuras de datos.", creditos: 80 },
+        { id: "01292", nombre: "Álgebra y Geometría Analítica", resumen: "Conceptos de álgebra lineal y geometría analítica aplicados a la computación.", creditos: 96 },
+        { id: "01291", nombre: "Análisis Matemático I", resumen: "Cálculo diferencial e integral de una variable.", creditos: 112 },
+        { id: "00677", nombre: "Sistemas de Información", resumen: "Análisis de sistemas de información y su ciclo de vida.", creditos: 64 },
+        { id: "00902", nombre: "Aspectos Sociales e Institucionales de la Universidad", resumen: "Análisis del rol social de la universidad y sus aspectos institucionales.", creditos: 32 }
+      ],
+      "2do Año": [
+        { id: "01477", nombre: "Estructura de Datos", resumen: "Estudio de las principales estructuras de datos y algoritmos asociados.", creditos: 80 },
+        { id: "01478", nombre: "Ingeniería de Requisitos", resumen: "Técnicas y metodologías para la elicitación, análisis y especificación de requisitos de software.", creditos: 80 },
+        { id: "01296", nombre: "Análisis Matemático II", resumen: "Cálculo multivariable y ecuaciones diferenciales.", creditos: 112 },
+        { id: "01325", nombre: "Inglés Técnico", resumen: "Desarrollo de habilidades de lectura y comprensión de textos técnicos en inglés.", creditos: 96 },
+        { id: "01479", nombre: "Proceso de Software", resumen: "Estudio de los modelos y fases del ciclo de vida del desarrollo de software.", creditos: 64 },
+        { id: "01480", nombre: "Introducción a la Programación Orientada a Objetos", resumen: "Conceptos fundamentales de la programación orientada a objetos: clases, objetos, herencia y polimorfismo.", creditos: 64 },
+        { id: "01481", nombre: "Base de Datos I", resumen: "Diseño, implementación y gestión de bases de datos relacionales.", creditos: 64 },
+        { id: "01482", nombre: "Matemática Discreta", resumen: "Fundamentos de lógica, conjuntos, relaciones y grafos para la computación.", creditos: 64 },
+        { id: "01500", nombre: "Redes de Datos", resumen: "Principios de redes de computadoras, protocolos y arquitecturas de red.", creditos: 96 }
+      ],
+      "3er Año": [
+        { id: "01483", nombre: "Programación Orientada a Objetos", resumen: "Profundización en el diseño y desarrollo de aplicaciones utilizando paradigmas de POO.", creditos: 64 },
+        { id: "01484", nombre: "Base de Datos II", resumen: "Temas avanzados en bases de datos, incluyendo bases de datos distribuidas y NoSQL.", creditos: 64 },
+        { id: "01485", nombre: "Diseño de Sistemas", resumen: "Metodologías y herramientas para el diseño de arquitecturas de software.", creditos: 80 },
+        { id: "00373", nombre: "Sistemas Operativos I", resumen: "Estudio de los principios de diseño y funcionamiento de los sistemas operativos.", creditos: 80 },
+        { id: "01294", nombre: "Probabilidades y Estadística", resumen: "Conceptos de probabilidad, inferencia estadística y análisis de datos.", creditos: 64 },
+        { id: "01488", nombre: "Programación Multiplataforma", resumen: "Desarrollo de aplicaciones que pueden ejecutarse en diferentes plataformas (web, móvil, escritorio).", creditos: 64 },
+        { id: "00871", nombre: "Programación Lógica y Funcional", resumen: "Introducción a los paradigmas de programación lógica y funcional.", creditos: 80 },
+        { id: "01501", nombre: "Base de Datos III", resumen: "Gestión de grandes volúmenes de datos y sistemas de almacenamiento complejos.", creditos: 64 },
+        { id: "01502", nombre: "Diseño de Interfaz", resumen: "Principios y técnicas para el diseño de interfaces de usuario intuitivas y efectivas.", creditos: 64 },
+        { id: "01493", nombre: "Sistemas Operativos II", resumen: "Temas avanzados en sistemas operativos, como concurrencia, seguridad y virtualización.", creditos: 96 }
+      ],
+      "4to Año": [
+        { id: "01491", nombre: "Programación Distribuida, Concurrente y Paralela", resumen: "Diseño y desarrollo de sistemas que operan en entornos distribuidos y concurrentes.", creditos: 64 },
+        { id: "01314", nombre: "Economía y Organizaciones", resumen: "Principios económicos y la estructura de las organizaciones en el contexto de TI.", creditos: 80 },
+        { id: "01503", nombre: "Calidad y Testing", resumen: "Metodologías para asegurar la calidad del software y técnicas de prueba.", creditos: 80 },
+        { id: "optativas_I_II", nombre: "Optativas (Primer y Segundo Cuatrimestre)", resumen: "Elige entre las siguientes materias optativas para completar tus créditos:",
+          tipo: "Optativa",
+          opciones: [
+            { id: "00357", nombre: "Arquitectura I", creditos: 96 },
+            { id: "00368", nombre: "Comunicación de Datos", creditos: 80 },
+            { id: "00404", nombre: "Sistemas Administrativos I", creditos: 64 },
+            { id: "00406", nombre: "Sistemas Administrativos II", creditos: 64 },
+            { id: "00419", nombre: "Redes II", creditos: 80 },
+            { id: "00900", nombre: "Antropología de la Comunicación I", creditos: 64 },
+            { id: "00901", nombre: "Antropología de la Comunicación II", creditos: 64 },
+            { id: "00369", nombre: "Ciencias de la Computación II", creditos: 96 },
+            { id: "00416", nombre: "Compiladores", creditos: 80 },
+            { id: "00397", nombre: "Métricas de Software", creditos: 80 }
+          ]
+        },
+        { id: "00870", nombre: "Práctica Profesional y Legislación", resumen: "Marco legal y ético de la práctica profesional en sistemas.", creditos: 64 },
+        { id: "00872", nombre: "Gestión de Proyectos", resumen: "Principios y metodologías para la gestión de proyectos de tecnología.", creditos: 64 },
+        { id: "01492", nombre: "Ciencias de la Computación", resumen: "Conceptos avanzados en teoría de la computación y algoritmos.", creditos: 96 }
+      ],
+      "5to Año": [
+        { id: "01341", nombre: "Formulación y Evaluación de Proyectos", resumen: "Técnicas para la formulación, análisis y evaluación de proyectos de inversión en TI.", creditos: 96 },
+        { id: "01504", nombre: "Lenguajes y Compiladores", resumen: "Estudio de los lenguajes de programación y el diseño de compiladores.", creditos: 80 },
+        { id: "01494", nombre: "Introducción a la Inteligencia Computacional", resumen: "Fundamentos de inteligencia artificial, aprendizaje automático y sus aplicaciones.", creditos: 80 },
+        { id: "01505", nombre: "Ciencia de Datos", resumen: "Introducción a la ciencia de datos, análisis de grandes volúmenes de información y técnicas de modelado.", creditos: 80 }
+      ],
+      "Trabajo Final": [
+        { id: "01506", nombre: "Trabajo Final", resumen: "Desarrollo de un proyecto integrador que aplica los conocimientos adquiridos durante la carrera.", creditos: 200 }
+      ]
+    };
+
+    // Flatten the subjects into a single object for easy lookup by ID
+    const materiasPlan = {};
+    Object.values(materias).flat().forEach(m => {
+      if (m.tipo === "Optativa" && m.opciones) {
+        m.opciones.forEach(opt => materiasPlan[opt.id] = opt);
+      } else {
+        materiasPlan[m.id] = m;
+      }
     });
 
-    cargarMalla();
-    actualizarEstado();
+    // --- Curriculum Grid Rendering ---
+    // Renders the entire curriculum grid, updates progress, and handles subject card clicks
+    function renderMalla() {
+      const container = document.getElementById("malla");
+      container.innerHTML = ""; // Clear existing grid
+      const aprobadas = JSON.parse(localStorage.getItem("materiasAprobadas") || "[]");
+
+// --- Equivalencias automáticas ---
+const equivalencias = ["01474", "01475", "01374", "01476", "01325"];
+
+  const aprobadasConEquivalencias = [...new Set([...aprobadas, ...equivalencias])];
+      let total = 0, completas = 0;
+
+      for (const [anio, materiasAnio] of Object.entries(materias)) {
+        const div = document.createElement("div");
+        div.className = "bg-white dark:bg-gray-800 rounded shadow p-4 border border-gray-200 dark:border-gray-700";
+        div.innerHTML = `<h2 class='text-lg font-semibold text-blue-700 dark:text-blue-300 mb-3 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-md'>${anio}</h2>`;
+
+        materiasAnio.forEach(m => {
+          if (m.tipo === "Optativa" && m.opciones) {
+            // Handle optative subjects as a group
+            const optativaCard = document.createElement("div");
+            optativaCard.className = `p-4 mb-3 rounded-lg border border-gray-200 dark:border-gray-700 text-sm transition-all duration-200 
+              bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200`;
+            optativaCard.innerHTML = `
+              <div class="font-semibold mb-2">${m.nombre}</div>
+              <p class="text-xs text-gray-600 dark:text-gray-300 mb-2">${m.resumen}</p>
+              <ul class="list-disc list-inside text-xs text-gray-700 dark:text-gray-300">
+                ${m.opciones.map(opt => {
+                  const aprobado = aprobadas.includes(opt.id);
+                  if (aprobado) completas++; // Count optativas as completed if any is approved
+                  total++; // Count each optativa option as a potential subject
+                  return `<li class="${aprobado ? 'line-through text-green-700 dark:text-green-300' : ''}">${opt.nombre} (${opt.creditos} créditos)</li>`;
+                }).join('')}
+              </ul>
+            `;
+            div.appendChild(optativaCard);
+          } else {
+            const aprobado = aprobadasConEquivalencias.includes(m.id);
+            const card = document.createElement("div");
+            card.className = `p-4 mb-3 rounded-lg border border-gray-200 dark:border-gray-700 text-sm cursor-pointer transition-all duration-200 ${aprobado ? 
+              'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 line-through' : 
+              'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200'}`;
+            card.innerHTML = `
+              <div class="flex items-center justify-between">
+                <span class="${aprobado ? 'opacity-70' : ''}">${m.nombre}</span>
+                ${m.creditos ? `<span class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full text-gray-600 dark:text-gray-300">${m.creditos} créditos</span>` : ''}
+              </div>
+            `;
+            card.onclick = () => {
+              materiaActual = m.id; // Set the current subject ID
+              document.getElementById("modalTitulo").textContent = m.nombre;
+              document.getElementById("modalResumen").textContent = m.resumen || "(Sin resumen disponible)";
+              const notas = JSON.parse(localStorage.getItem("notasPersonales") || "{}");
+              document.getElementById("notaPersonal").value = notas[m.id] || "";
+              
+              // Update the "Mark as Approved" button text and style
+              const btnAprobar = document.getElementById("btnAprobar");
+              if (aprobadasConEquivalencias.includes(m.id)) {
+                btnAprobar.textContent = "Desmarcar como Aprobada";
+                btnAprobar.classList.remove("bg-green-600", "hover:bg-green-500");
+                btnAprobar.classList.add("bg-yellow-600", "hover:bg-yellow-500");
+              } else {
+                btnAprobar.textContent = "Marcar como Aprobada";
+                btnAprobar.classList.remove("bg-yellow-600", "hover:bg-yellow-500");
+                btnAprobar.classList.add("bg-green-600", "hover:bg-green-500");
+              }
+
+              renderArchivosCargados(); // Load and display files associated with the subject
+              abrirModal(); // Show the subject details modal
+            };
+            div.appendChild(card);
+            total++; // Increment total subjects count
+            if (aprobado) completas++; // Increment approved subjects count
+          }
+        });
+
+        container.appendChild(div);
+      }
+      // Update progress text
+      document.getElementById("progresoTexto").textContent = `Progreso: ${total > 0 ? Math.round((completas / total) * 100) : 0}% completado`;
+    }
+
+    // --- Reset Functionality (with Custom Confirmation Modal) ---
+    // Show the custom confirmation modal for resetting data
+    document.getElementById("resetear").addEventListener("click", () => {
+      const confirmModal = document.getElementById("confirmModal");
+      const confirmModalContent = document.getElementById("confirmModalContent");
+      confirmModal.classList.remove("hidden");
+      // Trigger reflow to ensure transition plays
+      void confirmModalContent.offsetWidth;
+      confirmModalContent.classList.remove("scale-95", "opacity-0");
+      confirmModalContent.classList.add("scale-100", "opacity-100");
+    });
+
+    // Cancel the reset operation and hide the confirmation modal
+    function cancelReset() {
+      const confirmModal = document.getElementById("confirmModal");
+      const confirmModalContent = document.getElementById("confirmModalContent");
+      confirmModalContent.classList.remove("scale-100", "opacity-100");
+      confirmModalContent.classList.add("scale-95", "opacity-0");
+      confirmModalContent.addEventListener('transitionend', function handler() {
+        confirmModal.classList.add("hidden");
+        confirmModalContent.removeEventListener('transitionend', handler);
+      }, { once: true });
+    }
+
+    // Execute the reset operation (clear all localStorage data)
+    function executeReset() {
+      localStorage.removeItem("materiasAprobadas");
+      localStorage.removeItem("notasPersonales");
+      localStorage.removeItem("calendarioMaterias");
+      localStorage.removeItem("archivosMaterias"); // Clear uploaded files as well
+      location.reload(); // Reload the page to reflect changes
+    }
+
+    // Initial render calls
+    renderMalla();
+    renderCalendario(); // Ensure calendar is rendered if visible on load
+
+// --- Nuevas funcionalidades ---
+
+// Exportar a PDF
+document.getElementById("exportarPdf").addEventListener("click", () => {
+  const printContents = document.getElementById("malla").innerHTML;
+  const original = document.body.innerHTML;
+  document.body.innerHTML = printContents;
+  window.print();
+  document.body.innerHTML = original;
+  location.reload();
+});
+
+// Guardar backup
+document.getElementById("guardarBackup").addEventListener("click", () => {
+  const data = {
+    materiasAprobadas: localStorage.getItem("materiasAprobadas"),
+    notasPersonales: localStorage.getItem("notasPersonales"),
+    calendarioMaterias: localStorage.getItem("calendarioMaterias"),
+    archivosMaterias: localStorage.getItem("archivosMaterias"),
+  };
+  const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "backup_malla.json";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// Cargar backup
+document.getElementById("cargarBackup").addEventListener("click", () => {
+  document.getElementById("inputBackup").click();
+});
+
+document.getElementById("inputBackup").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function (event) {
+    const data = JSON.parse(event.target.result);
+    localStorage.setItem("materiasAprobadas", data.materiasAprobadas || "[]");
+    localStorage.setItem("notasPersonales", data.notasPersonales || "{}");
+    localStorage.setItem("calendarioMaterias", data.calendarioMaterias || "[]");
+    localStorage.setItem("archivosMaterias", data.archivosMaterias || "{}");
+    location.reload();
+  };
+  reader.readAsText(file);
+});
+
   </script>
 </body>
 </html>
