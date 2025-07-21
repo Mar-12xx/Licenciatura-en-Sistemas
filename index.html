@@ -30,6 +30,62 @@
     .tooltip:hover::after {
       display: block; /* Show on hover */
     }
+    /* Generic modal styling */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+        padding: 1rem;
+    }
+    .modal-content {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        max-width: 90%;
+        width: 500px;
+        position: relative;
+        border: 1px solid #e2e8f0; /* gray-200 */
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        transform: scale(0.95);
+        opacity: 0;
+        transition: all 0.3s ease-out;
+        max-height: 90vh; /* Limit height for scrollable content */
+        overflow-y: auto; /* Enable vertical scrolling */
+    }
+    .dark .modal-content {
+        background: #1f2937; /* gray-800 */
+        border-color: #374151; /* gray-700 */
+    }
+    .modal-content.scale-100 {
+        transform: scale(1);
+        opacity: 1;
+    }
+    .modal-close-button {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #6b7280; /* gray-500 */
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 0;
+        line-height: 1;
+    }
+    .modal-close-button:hover {
+        color: #111827; /* gray-900 */
+    }
+    .dark .modal-close-button {
+        color: #9ca3af; /* gray-300 */
+    }
+    .dark .modal-close-button:hover {
+        color: #f9fafb; /* gray-100 */
+    }
   </style>
 </head>
 <body class="dark:bg-gray-900 dark:text-gray-100 bg-gray-100 text-gray-900 font-sans transition-colors">
@@ -37,49 +93,143 @@
     <!-- Navigation Bar -->
     <nav class="mb-10 text-center">
       <h1 class="text-3xl font-light text-gray-800 dark:text-gray-200 mb-2">Plan de Estudios</h1>
-      <div class="flex justify-center items-center gap-4">
+      <div class="flex justify-center items-center gap-4 flex-wrap">
         <!-- Theme toggle button -->
         <button id="toggleTheme" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">🌗</button>
         <!-- Calendar view toggle button -->
-        <button id="verCalendario" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">📆</button>
+        <button id="openAddClassModal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">➕ Clase</button>
+        <button id="openAddEventModal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">➕ Evento</button>
+        <!-- Agenda view toggle button -->
+        <button id="openAgendaModal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">📝 Agenda</button>
+        <!-- View Records button -->
+        <button id="verRegistros" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">📋 Ver Registros</button>
         <!-- Progress display text -->
         <span id="progresoTexto" class="text-sm text-gray-500">0% completado</span>
-<!-- Botones nuevos -->
-<button id="exportarPdf" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">📄 Exportar PDF</button>
-<button id="guardarBackup" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">💾 Backup</button>
-<button id="cargarBackup" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">📂 Cargar</button>
-<input type="file" id="inputBackup" accept="application/json" class="hidden">
-
+        <!-- Botones nuevos -->
+        <button id="exportarPdf" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">📄 Exportar PDF</button>
+        <button id="guardarBackup" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">💾 Backup</button>
+        <button id="cargarBackup" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">📂 Cargar</button>
+        <input type="file" id="inputBackup" accept="application/json" class="hidden">
         <!-- Reset button - Added as per the JavaScript listener -->
         <button id="resetear" class="text-red-500 hover:text-red-700 dark:hover:text-red-300 p-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors">🗑️</button>
       </div>
     </nav>
 
     <!-- Curriculum Grid Container -->
-    
-<div class="w-full bg-gray-200 dark:bg-gray-700 rounded h-4 mb-4">
-  <div id="barraProgreso" class="bg-blue-600 h-4 rounded" style="width: 0%"></div>
-</div>
-<div id="malla" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 min-w-min"></div>
+    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded h-4 mb-4">
+      <div id="barraProgreso" class="bg-blue-600 h-4 rounded" style="width: 0%"></div>
+    </div>
+    <div id="malla" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 min-w-min"></div>
 
-    <!-- Calendar Section -->
-    <div id="calendario" class="hidden mt-6">
-      <h2 class="text-lg font-medium mb-3 text-gray-800 dark:text-gray-200">Horarios</h2>
-      <!-- Form to add new schedule entries -->
-      <form id="formCalendario" class="bg-white dark:bg-gray-800 p-3 rounded mb-3 shadow-md">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input type="text" name="materia" placeholder="Nombre de la materia" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-          <input type="text" name="comision" placeholder="Comisión (opcional)" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <input type="text" name="dia" placeholder="Día (ej. Lunes)" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-          <input type="text" name="hora" placeholder="Horario (ej. 18:00 - 20:00)" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-        </div>
-        <button type="submit" class="mt-4 bg-green-600 hover:bg-green-500 px-4 py-2 rounded text-white font-semibold transition-colors shadow-md">Agregar</button>
-      </form>
-      <!-- List of scheduled classes -->
-      <ul id="listaCalendario" class="space-y-2"></ul>
+    <!-- Modal for Adding Class -->
+    <div id="modalAddClass" class="modal-overlay hidden">
+      <div class="modal-content">
+        <button onclick="closeModal('modalAddClass')" class="modal-close-button">&times;</button>
+        <h2 class="text-lg font-medium mb-3 text-gray-800 dark:text-gray-200">Agregar Clase</h2>
+        <form id="formCalendarioClase" class="bg-white dark:bg-gray-800 p-3 rounded mb-3 shadow-md">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input type="text" name="materia" placeholder="Nombre de la materia" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            <input type="text" name="comision" placeholder="Comisión (opcional)" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="text" name="dia" placeholder="Día (ej. Lunes)" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            <input type="text" name="hora" placeholder="Horario (ej. 18:00 - 20:00)" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          <button type="submit" class="mt-4 bg-green-600 hover:bg-green-500 px-4 py-2 rounded text-white font-semibold transition-colors shadow-md">Agregar Clase</button>
+        </form>
+      </div>
     </div>
 
-    <!-- Modal for Subject Details and File Upload -->
+    <!-- Modal for Adding Event -->
+    <div id="modalAddEvent" class="modal-overlay hidden">
+      <div class="modal-content">
+        <button onclick="closeModal('modalAddEvent')" class="modal-close-button">&times;</button>
+        <h2 class="text-lg font-medium mb-3 text-gray-800 dark:text-gray-200">Agregar Evento</h2>
+        <form id="formCalendarioEvento" class="bg-white dark:bg-gray-800 p-3 rounded mb-3 shadow-md">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input type="text" name="nombreEvento" placeholder="Nombre del evento" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            <input type="date" name="fechaEvento" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            <input type="time" name="horaEvento" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select name="tipoEvento" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+              <option value="">Seleccionar Tipo</option>
+              <option value="Examen">Examen</option>
+              <option value="Final">Final</option>
+              <option value="Entrega">Entrega</option>
+              <option value="Otro">Otro</option>
+            </select>
+            <input type="number" name="minutosNotificacion" placeholder="Minutos antes para notificar (opcional)" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <textarea name="descripcionEvento" placeholder="Descripción (opcional)" class="p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 col-span-full"></textarea>
+          </div>
+          <button type="submit" class="mt-4 bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-white font-semibold transition-colors shadow-md">Agregar Evento</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal for Agenda -->
+    <div id="modalAgenda" class="modal-overlay hidden">
+      <div class="modal-content">
+        <button onclick="closeModal('modalAgenda')" class="modal-close-button">&times;</button>
+        <h2 class="text-lg font-medium mb-3 text-gray-800 dark:text-gray-200">Agenda Personal</h2>
+        <div class="bg-white dark:bg-gray-800 p-3 rounded mb-3 shadow-md">
+          <textarea id="agendaPersonalTextarea" class="w-full p-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-gray-100 resize-y focus:outline-none focus:ring-2 focus:ring-blue-500" rows="10" placeholder="Escribe tus notas, tareas o recordatorios aquí..."></textarea>
+          <button id="guardarAgendaBtn" class="mt-4 bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-white font-semibold transition-colors shadow-md">Guardar Agenda</button>
+          <button id="expandAgendaBtn" class="mt-4 bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded text-white font-semibold transition-colors shadow-md ml-2">✨ Expandir Elemento</button>
+          <div id="saveAgendaMessage" class="hidden mt-2 text-center text-green-600 dark:text-green-400 text-sm font-semibold">Agenda guardada exitosamente!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for Viewing Records (Calendar and Notes Summary) -->
+    <div id="modalViewRecords" class="modal-overlay hidden">
+      <div class="modal-content max-w-2xl w-full">
+        <button onclick="closeModal('modalViewRecords')" class="modal-close-button">&times;</button>
+        <h2 class="text-lg font-medium mb-3 text-gray-800 dark:text-gray-200">Resumen de Registros</h2>
+        
+        <div class="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded">
+          <h3 class="text-md font-semibold mb-2 text-gray-800 dark:text-gray-200">Filtrar Horarios y Eventos</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input type="text" id="searchRecords" placeholder="Buscar por nombre..." class="p-2 rounded bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select id="filterRecordsType" class="p-2 rounded bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Todos los tipos</option>
+              <option value="clase">Clase</option>
+              <option value="Examen">Examen</option>
+              <option value="Final">Final</option>
+              <option value="Entrega">Entrega</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <button id="exportIcal" class="mt-4 bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-white font-semibold transition-colors shadow-md">Exportar iCal</button>
+        </div>
+
+        <div class="mb-6">
+          <h3 class="text-md font-semibold mb-2 text-gray-800 dark:text-gray-200">Horarios y Eventos Agendados</h3>
+          <ul id="listaRegistrosCalendario" class="space-y-2 text-sm"></ul>
+        </div>
+
+        <div class="mb-6">
+          <h3 class="text-md font-semibold mb-2 text-gray-800 dark:text-gray-200">Materias con Notas Personales</h3>
+          <ul id="listaRegistrosNotas" class="space-y-2 text-sm"></ul>
+        </div>
+
+        <div>
+          <h3 class="text-md font-semibold mb-2 text-gray-800 dark:text-gray-200">Contenido de la Agenda Personal</h3>
+          <div id="contenidoAgendaResumen" class="bg-gray-100 dark:bg-gray-700 p-3 rounded text-gray-900 dark:text-gray-100 whitespace-pre-wrap text-sm"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for Gemini API Response -->
+    <div id="modalGeminiResponse" class="modal-overlay hidden">
+      <div class="modal-content">
+        <button onclick="closeModal('modalGeminiResponse')" class="modal-close-button">&times;</button>
+        <h2 id="geminiResponseTitle" class="text-lg font-medium mb-3 text-gray-800 dark:text-gray-200">Respuesta de Gemini</h2>
+        <div id="geminiResponseContent" class="bg-gray-100 dark:bg-gray-700 p-3 rounded text-gray-900 dark:text-gray-100 whitespace-pre-wrap text-sm">
+          <p id="geminiLoading" class="text-center text-blue-500 dark:text-blue-300">Cargando...</p>
+          <p id="geminiError" class="hidden text-center text-red-500 dark:text-red-300">Error al obtener la respuesta.</p>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Modal for Subject Details and File Upload (Existing Modal) -->
     <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 px-4">
       <div class="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-md w-full relative border border-gray-200 dark:border-gray-700 shadow-lg transform transition-all scale-95 opacity-0 duration-300" id="modalContent">
         <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-500 to-green-500 rounded-t-lg"></div>
@@ -100,6 +250,8 @@
         <div class="text-right mt-4">
           <!-- Button to save notes and files -->
           <button onclick="guardarNota()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded font-semibold transition-colors shadow-md">Guardar Nota</button>
+          <!-- Button to get more info from Gemini -->
+          <button id="getGeminiMateriaInfo" class="bg-pink-600 hover:bg-pink-500 text-white px-3 py-1 rounded ml-2 font-semibold transition-colors shadow-md">✨ Obtener Más Información</button>
           <!-- Button to mark subject as approved/unapproved -->
           <button onclick="toggleAprobada()" id="btnAprobar" class="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded ml-2 font-semibold transition-colors shadow-md">Marcar como Aprobada</button>
         </div>
@@ -123,64 +275,309 @@
   <script>
     // Global variable to store the currently selected subject ID
     let materiaActual = null;
+    // Array to store notification timeouts, so they can be cleared if needed
+    let notificationTimeouts = [];
 
     // --- Theme Toggling ---
     document.getElementById("toggleTheme").addEventListener("click", () => {
       document.documentElement.classList.toggle("dark");
     });
 
-    // --- Calendar Functionality ---
-    // Load calendar data from localStorage, or initialize as empty array
-    const calendario = JSON.parse(localStorage.getItem("calendarioMaterias") || "[]");
+    // --- Generic Modal Functions ---
+    function openModal(modalId) {
+      const modal = document.getElementById(modalId);
+      const modalContent = modal.querySelector('.modal-content');
+      modal.classList.remove("hidden");
+      // Trigger reflow to ensure transition plays
+      void modalContent.offsetWidth; 
+      modalContent.classList.remove("scale-95", "opacity-0");
+      modalContent.classList.add("scale-100", "opacity-100");
+    }
 
-    // Toggle visibility of the calendar section
-    document.getElementById("verCalendario").addEventListener("click", () => {
-      const seccion = document.getElementById("calendario");
-      seccion.classList.toggle("hidden");
-      renderCalendario(); // Render calendar entries when shown
+    function closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      const modalContent = modal.querySelector('.modal-content');
+      modalContent.classList.remove("scale-100", "opacity-100");
+      modalContent.classList.add("scale-95", "opacity-0");
+      // Hide modal after transition completes
+      modalContent.addEventListener('transitionend', function handler() {
+        modal.classList.add("hidden");
+        modalContent.removeEventListener('transitionend', handler);
+      }, { once: true });
+      // Hide save messages if any
+      const saveMessages = modal.querySelectorAll('[id$="saveMessage"]');
+      saveMessages.forEach(msg => msg.classList.add("hidden"));
+    }
+
+    // --- Notification Functionality ---
+    function requestNotificationPermission() {
+      if (!("Notification" in window)) {
+        console.log("Este navegador no soporta notificaciones de escritorio.");
+      } else if (Notification.permission === "granted") {
+        console.log("Permiso de notificación ya concedido.");
+      } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            console.log("Permiso de notificación concedido.");
+          } else {
+            console.log("Permiso de notificación denegado.");
+          }
+        });
+      }
+    }
+
+    function scheduleNotifications() {
+      // Clear existing timeouts to prevent duplicates
+      notificationTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+      notificationTimeouts = [];
+
+      const now = new Date();
+      calendario.forEach(item => {
+        if (item.type === 'evento' && item.fechaEvento) {
+          const eventDateTime = new Date(`${item.fechaEvento}T${item.horaEvento || '00:00'}`);
+          const minutesToNotify = parseInt(item.minutosNotificacion) || 0;
+          const notificationTime = new Date(eventDateTime.getTime() - minutesToNotify * 60 * 1000);
+
+          if (notificationTime > now) {
+            const delay = notificationTime.getTime() - now.getTime();
+            const timeoutId = setTimeout(() => {
+              if (Notification.permission === "granted") {
+                new Notification(`Recordatorio: ${item.tipoEvento}`, {
+                  body: `${item.nombreEvento} ${item.descripcionEvento ? '- ' + item.descripcionEvento : ''} es el ${eventDateTime.toLocaleDateString('es-ES')} a las ${item.horaEvento || 'N/A'}.`,
+                  icon: 'https://placehold.co/64x64/007bff/ffffff?text=🔔' // Placeholder icon
+                });
+              }
+            }, delay);
+            notificationTimeouts.push(timeoutId);
+          }
+        }
+      });
+    }
+
+    // --- Calendar and Agenda Functionality ---
+    // Load calendar data from localStorage, or initialize as empty array
+    // Unified array for both classes and events
+    const calendario = JSON.parse(localStorage.getItem("calendarioEntries") || "[]");
+    const agendaPersonal = localStorage.getItem("agendaPersonal") || "";
+
+    // Event listeners for opening new modals
+    document.getElementById("openAddClassModal").addEventListener("click", () => openModal('modalAddClass'));
+    document.getElementById("openAddEventModal").addEventListener("click", () => openModal('modalAddEvent'));
+    document.getElementById("openAgendaModal").addEventListener("click", () => {
+      document.getElementById("agendaPersonalTextarea").value = localStorage.getItem("agendaPersonal") || "";
+      openModal('modalAgenda');
+    });
+    document.getElementById("verRegistros").addEventListener("click", () => {
+      renderAllRecords();
+      openModal('modalViewRecords');
     });
 
-    // Handle form submission for adding new calendar entries
-    document.getElementById("formCalendario").addEventListener("submit", e => {
+    // Handle form submission for adding new class entries
+    document.getElementById("formCalendarioClase").addEventListener("submit", e => {
       e.preventDefault(); // Prevent default form submission
       const data = Object.fromEntries(new FormData(e.target).entries()); // Get form data
+      // Basic validation
+      if (!data.materia || !data.dia || !data.hora) {
+          alert("Por favor, completa todos los campos requeridos para la clase.");
+          return;
+      }
+      data.type = 'clase'; // Mark as class entry
       calendario.push(data); // Add new entry to the calendar array
-      localStorage.setItem("calendarioMaterias", JSON.stringify(calendario)); // Save to localStorage
+      localStorage.setItem("calendarioEntries", JSON.stringify(calendario)); // Save to localStorage
       e.target.reset(); // Clear form fields
-      renderCalendario(); // Re-render the calendar list
+      renderAllRecords(); // Re-render records in case modal is open
+      closeModal('modalAddClass'); // Close the modal after adding
     });
 
-    // Render (display) the calendar entries
-    function renderCalendario() {
-      const ul = document.getElementById("listaCalendario");
+    // Handle form submission for adding new event entries
+    document.getElementById("formCalendarioEvento").addEventListener("submit", e => {
+      e.preventDefault(); // Prevent default form submission
+      const data = Object.fromEntries(new FormData(e.target).entries()); // Get form data
+      // Basic validation
+      if (!data.nombreEvento || !data.fechaEvento || !data.tipoEvento) {
+          alert("Por favor, completa todos los campos requeridos para el evento.");
+          return;
+      }
+      data.type = 'evento'; // Mark as event entry
+      calendario.push(data); // Add new entry to the calendar array
+      localStorage.setItem("calendarioEntries", JSON.stringify(calendario)); // Save to localStorage
+      e.target.reset(); // Clear form fields
+      scheduleNotifications(); // Reschedule notifications with the new event
+      renderAllRecords(); // Re-render records in case modal is open
+      closeModal('modalAddEvent'); // Close the modal after adding
+    });
+
+    // Save Agenda
+    document.getElementById("guardarAgendaBtn").addEventListener("click", () => {
+      const agendaText = document.getElementById("agendaPersonalTextarea").value;
+      localStorage.setItem("agendaPersonal", agendaText);
+      const saveAgendaMessage = document.getElementById("saveAgendaMessage");
+      saveAgendaMessage.classList.remove("hidden");
+      setTimeout(() => {
+        saveAgendaMessage.classList.add("hidden");
+      }, 1500);
+      renderAllRecords(); // Update records summary
+    });
+
+    // Event listeners for search and filter in records modal
+    document.getElementById("searchRecords").addEventListener("input", renderCalendarRecords);
+    document.getElementById("filterRecordsType").addEventListener("change", renderCalendarRecords);
+
+    // Render (display) the calendar entries (classes and events) in the records modal
+    function renderCalendarRecords() {
+      const ul = document.getElementById("listaRegistrosCalendario");
       ul.innerHTML = ""; // Clear existing list
-      if (calendario.length === 0) {
-        ul.innerHTML = '<li class="text-gray-500 dark:text-gray-400 text-center py-4">No hay horarios agendados.</li>';
+
+      const searchText = document.getElementById("searchRecords").value.toLowerCase();
+      const filterType = document.getElementById("filterRecordsType").value;
+
+      const filteredCalendario = calendario.filter(item => {
+        const matchesSearch = item.type === 'clase' 
+          ? item.materia.toLowerCase().includes(searchText) 
+          : item.nombreEvento.toLowerCase().includes(searchText);
+        
+        const matchesType = filterType === '' || 
+                            (item.type === 'clase' && filterType === 'clase') ||
+                            (item.type === 'evento' && item.tipoEvento === filterType);
+        
+        return matchesSearch && matchesType;
+      });
+
+      if (filteredCalendario.length === 0) {
+        ul.innerHTML = '<li class="text-gray-500 dark:text-gray-400 p-2">No hay horarios o eventos agendados que coincidan con la búsqueda/filtro.</li>';
         return;
       }
-      calendario.forEach((item, idx) => {
+
+      // Sort calendar entries: classes by day, events by date
+      const daysOrder = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+      const sortedCalendario = [...filteredCalendario].sort((a, b) => {
+        if (a.type === 'clase' && b.type === 'clase') {
+          const dayA = daysOrder.indexOf(a.dia);
+          const dayB = daysOrder.indexOf(b.dia);
+          if (dayA !== dayB) return dayA - dayB;
+          return a.hora.localeCompare(b.hora);
+        } else if (a.type === 'evento' && b.type === 'evento') {
+          const dateA = new Date(`${a.fechaEvento}T${a.horaEvento || '00:00'}`);
+          const dateB = new Date(`${b.fechaEvento}T${b.horaEvento || '00:00'}`);
+          return dateA - dateB;
+        } else {
+          // Prioritize events with specific dates over classes
+          if (a.type === 'evento' && b.type === 'clase') return -1;
+          if (a.type === 'clase' && b.type === 'evento') return 1;
+          return 0; // Should not happen if all have types
+        }
+      });
+
+      sortedCalendario.forEach((item, idx) => {
         const li = document.createElement("li");
-        li.className = "bg-white dark:bg-gray-700 p-3 rounded flex justify-between items-center shadow-sm";
+        li.className = "bg-gray-50 dark:bg-gray-700 p-2 rounded flex justify-between items-center shadow-sm";
+
+        if (item.type === 'clase') {
+          li.innerHTML = `
+            <div>
+              <strong class="text-gray-900 dark:text-gray-100">📚 ${item.materia}</strong> 
+              <span class="text-gray-600 dark:text-gray-300">(${item.comision || "Sin comisión"})</span><br>
+              <span class='text-xs text-gray-500 dark:text-gray-400'>${item.dia} - ${item.hora}</span>
+            </div>
+            <button onclick="eliminarCalendario(${idx})" class="text-red-600 dark:text-red-400 hover:underline text-xs ml-4">Eliminar</button>
+          `;
+        } else if (item.type === 'evento') {
+          const eventDate = new Date(item.fechaEvento);
+          const formattedDate = eventDate.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+          li.innerHTML = `
+            <div>
+              <strong class="text-gray-900 dark:text-gray-100">🗓️ ${item.tipoEvento}: ${item.nombreEvento}</strong> 
+              <span class="text-gray-600 dark:text-gray-300">(${formattedDate} ${item.horaEvento || ''})</span><br>
+              <span class='text-xs text-gray-500 dark:text-gray-400'>${item.descripcionEvento || "Sin descripción"}</span>
+            </div>
+            <button onclick="eliminarCalendario(${idx})" class="text-red-600 dark:text-red-400 hover:underline text-xs ml-4">Eliminar</button>
+          `;
+        }
+        ul.appendChild(li);
+      });
+    }
+
+    // Function to delete a calendar entry from the records modal
+    function eliminarCalendario(index) {
+      // Note: This index is for the *filtered and sorted* list, not the original `calendario` array.
+      // We need to find the original index or re-filter after deletion.
+      // A safer approach is to pass a unique ID for each item if available, or re-filter.
+      // For simplicity, let's re-load and re-render the whole list for now.
+      const originalCalendario = JSON.parse(localStorage.getItem("calendarioEntries") || "[]");
+      originalCalendario.splice(index, 1); // This assumes the index matches the current filtered/sorted view.
+                                           // For a robust solution, each item should have a unique ID.
+      localStorage.setItem("calendarioEntries", JSON.stringify(originalCalendario));
+      scheduleNotifications(); // Reschedule notifications after deletion
+      renderAllRecords(); // Re-render the records list
+    }
+
+    // Render summary of subjects with personal notes
+    function renderNotesRecords() {
+      const ul = document.getElementById("listaRegistrosNotas");
+      ul.innerHTML = "";
+      const notas = JSON.parse(localStorage.getItem("notasPersonales") || "{}");
+      const materiasConNotas = Object.keys(notas).filter(id => notas[id] && notas[id].trim() !== "");
+
+      if (materiasConNotas.length === 0) {
+        ul.innerHTML = '<li class="text-gray-500 dark:text-gray-400 p-2">No hay materias con notas personales.</li>';
+        return;
+      }
+
+      materiasConNotas.forEach(mId => {
+        const materiaNombre = materiasPlan[mId] ? materiasPlan[mId].nombre : `Materia Desconocida (${mId})`;
+        const li = document.createElement("li");
+        li.className = "bg-gray-50 dark:bg-gray-700 p-2 rounded shadow-sm";
         li.innerHTML = `
-          <div>
-            <strong class="text-gray-900 dark:text-gray-100">${item.materia}</strong> 
-            <span class="text-gray-600 dark:text-gray-300">(${item.comision || "Sin comisión"})</span><br>
-            <span class='text-sm text-gray-500 dark:text-gray-400'>${item.dia} - ${item.hora}</span>
-          </div>
-          <button onclick="eliminarCalendario(${idx})" class="text-red-600 dark:text-red-400 hover:underline text-sm ml-4">Eliminar</button>
+          <strong class="text-gray-900 dark:text-gray-100">${materiaNombre}</strong>
+          <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${notas[mId].split('\n')[0]}</p>
+          <button onclick="viewFullNote('${mId}')" class="text-blue-600 dark:text-blue-400 hover:underline text-xs mt-1">Ver/Editar Nota</button>
         `;
         ul.appendChild(li);
       });
     }
 
-    // Function to delete a calendar entry
-    function eliminarCalendario(index) {
-      calendario.splice(index, 1); // Remove item from array
-      localStorage.setItem("calendarioMaterias", JSON.stringify(calendario)); // Update localStorage
-      renderCalendario(); // Re-render the list
+    // Function to open the subject modal with the specific note
+    function viewFullNote(mId) {
+      materiaActual = mId;
+      const m = materiasPlan[mId];
+      if (m) {
+        document.getElementById("modalTitulo").textContent = m.nombre;
+        document.getElementById("modalResumen").textContent = m.resumen || "(Sin resumen disponible)";
+        const notas = JSON.parse(localStorage.getItem("notasPersonales") || "{}");
+        document.getElementById("notaPersonal").value = notas[m.id] || "";
+        
+        const aprobadasConEquivalencias = [...new Set([...JSON.parse(localStorage.getItem("materiasAprobadas") || "[]"), "01474", "01475", "01374", "01476", "01325"])];
+        const btnAprobar = document.getElementById("btnAprobar");
+        if (aprobadasConEquivalencias.includes(m.id)) {
+          btnAprobar.textContent = "Desmarcar como Aprobada";
+          btnAprobar.classList.remove("bg-green-600", "hover:bg-green-500");
+          btnAprobar.classList.add("bg-yellow-600", "hover:bg-yellow-500");
+        } else {
+          btnAprobar.textContent = "Marcar como Aprobada";
+          btnAprobar.classList.remove("bg-yellow-600", "hover:bg-yellow-500");
+          btnAprobar.classList.add("bg-green-600", "hover:bg-green-500");
+        }
+        renderArchivosCargados();
+        closeModal('modalViewRecords'); // Close records modal before opening subject modal
+        abrirModal(); // Open the subject detail modal
+      }
     }
 
-    // --- Modal Functionality (for Subject Details) ---
+    // Render agenda personal content in the records modal
+    function renderAgendaRecords() {
+      const agendaContentDiv = document.getElementById("contenidoAgendaResumen");
+      const agendaText = localStorage.getItem("agendaPersonal") || "No hay nada en la agenda personal.";
+      agendaContentDiv.textContent = agendaText;
+    }
+
+    // Render all records when the "Ver Registros" modal is opened
+    function renderAllRecords() {
+      renderCalendarRecords();
+      renderNotesRecords();
+      renderAgendaRecords();
+    }
+
+    // --- Modal Functionality (for Subject Details - existing) ---
     // Open the modal with a fade-in effect
     function abrirModal() {
       const modal = document.getElementById("modal");
@@ -237,6 +634,7 @@
       setTimeout(() => {
         cerrarModal(); // Close modal after a short delay
         renderMalla(); // Re-render the curriculum grid to update subject status
+        renderAllRecords(); // Update records summary
       }, 800); // Show message for 0.8 seconds
     }
 
@@ -376,10 +774,10 @@
       container.innerHTML = ""; // Clear existing grid
       const aprobadas = JSON.parse(localStorage.getItem("materiasAprobadas") || "[]");
 
-// --- Equivalencias automáticas ---
-const equivalencias = ["01474", "01475", "01374", "01476", "01325"];
+      // --- Equivalencias automáticas ---
+      const equivalencias = ["01474", "01475", "01374", "01476", "01325"];
 
-  const aprobadasConEquivalencias = [...new Set([...aprobadas, ...equivalencias])];
+      const aprobadasConEquivalencias = [...new Set([...aprobadas, ...equivalencias])];
       let total = 0, completas = 0;
 
       for (const [anio, materiasAnio] of Object.entries(materias)) {
@@ -480,63 +878,203 @@ const equivalencias = ["01474", "01475", "01374", "01476", "01325"];
     function executeReset() {
       localStorage.removeItem("materiasAprobadas");
       localStorage.removeItem("notasPersonales");
-      localStorage.removeItem("calendarioMaterias");
+      localStorage.removeItem("calendarioEntries"); // Clear unified calendar data
       localStorage.removeItem("archivosMaterias"); // Clear uploaded files as well
+      localStorage.removeItem("agendaPersonal"); // Clear agenda data
       location.reload(); // Reload the page to reflect changes
     }
 
     // Initial render calls
     renderMalla();
-    renderCalendario(); // Ensure calendar is rendered if visible on load
+    requestNotificationPermission(); // Request notification permission on load
+    scheduleNotifications(); // Schedule notifications on load
 
-// --- Nuevas funcionalidades ---
+    // --- Nuevas funcionalidades ---
 
-// Exportar a PDF
-document.getElementById("exportarPdf").addEventListener("click", () => {
-  const printContents = document.getElementById("malla").innerHTML;
-  const original = document.body.innerHTML;
-  document.body.innerHTML = printContents;
-  window.print();
-  document.body.innerHTML = original;
-  location.reload();
-});
+    // Exportar a PDF
+    document.getElementById("exportarPdf").addEventListener("click", () => {
+      const printContents = document.getElementById("malla").innerHTML;
+      const original = document.body.innerHTML;
+      document.body.innerHTML = printContents;
+      window.print();
+      document.body.innerHTML = original;
+      location.reload();
+    });
 
-// Guardar backup
-document.getElementById("guardarBackup").addEventListener("click", () => {
-  const data = {
-    materiasAprobadas: localStorage.getItem("materiasAprobadas"),
-    notasPersonales: localStorage.getItem("notasPersonales"),
-    calendarioMaterias: localStorage.getItem("calendarioMaterias"),
-    archivosMaterias: localStorage.getItem("archivosMaterias"),
-  };
-  const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "backup_malla.json";
-  a.click();
-  URL.revokeObjectURL(url);
-});
+    // Guardar backup
+    document.getElementById("guardarBackup").addEventListener("click", () => {
+      const data = {
+        materiasAprobadas: localStorage.getItem("materiasAprobadas"),
+        notasPersonales: localStorage.getItem("notasPersonales"),
+        calendarioEntries: localStorage.getItem("calendarioEntries"), // Use unified key
+        archivosMaterias: localStorage.getItem("archivosMaterias"),
+        agendaPersonal: localStorage.getItem("agendaPersonal"), // Include agenda
+      };
+      const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "backup_malla.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
 
-// Cargar backup
-document.getElementById("cargarBackup").addEventListener("click", () => {
-  document.getElementById("inputBackup").click();
-});
+    // Cargar backup
+    document.getElementById("cargarBackup").addEventListener("click", () => {
+      document.getElementById("inputBackup").click();
+    });
 
-document.getElementById("inputBackup").addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function (event) {
-    const data = JSON.parse(event.target.result);
-    localStorage.setItem("materiasAprobadas", data.materiasAprobadas || "[]");
-    localStorage.setItem("notasPersonales", data.notasPersonales || "{}");
-    localStorage.setItem("calendarioMaterias", data.calendarioMaterias || "[]");
-    localStorage.setItem("archivosMaterias", data.archivosMaterias || "{}");
-    location.reload();
-  };
-  reader.readAsText(file);
-});
+    document.getElementById("inputBackup").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const data = JSON.parse(event.target.result);
+        localStorage.setItem("materiasAprobadas", data.materiasAprobadas || "[]");
+        localStorage.setItem("notasPersonales", data.notasPersonales || "{}");
+        localStorage.setItem("calendarioEntries", data.calendarioEntries || "[]"); // Use unified key
+        localStorage.setItem("archivosMaterias", data.archivosMaterias || "{}");
+        localStorage.setItem("agendaPersonal", data.agendaPersonal || ""); // Load agenda
+        location.reload();
+      };
+      reader.readAsText(file);
+    });
+
+    // Exportar a iCal
+    document.getElementById("exportIcal").addEventListener("click", () => {
+      let icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Malla Curricular App//NONSGML v1.0//EN\n`;
+
+      calendario.forEach(item => {
+        if (item.type === 'evento') {
+          const startDate = new Date(`${item.fechaEvento}T${item.horaEvento || '00:00'}`);
+          const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // Assume 1 hour duration if no end time
+
+          const formatDateTime = (date) => {
+            return date.toISOString().replace(/[-:]|\.\d{3}/g, '').slice(0, 15) + 'Z';
+          };
+
+          icsContent += `BEGIN:VEVENT\n`;
+          icsContent += `UID:${Date.now()}-${Math.random().toString(36).substring(2, 9)}\n`;
+          icsContent += `DTSTAMP:${formatDateTime(new Date())}\n`;
+          icsContent += `DTSTART:${formatDateTime(startDate)}\n`;
+          icsContent += `DTEND:${formatDateTime(endDate)}\n`;
+          icsContent += `SUMMARY:${item.tipoEvento}: ${item.nombreEvento}\n`;
+          if (item.descripcionEvento) {
+            icsContent += `DESCRIPTION:${item.descripcionEvento}\n`;
+          }
+          icsContent += `END:VEVENT\n`;
+        } else if (item.type === 'clase') {
+          // For classes, which are recurring, iCal is more complex (RRULE).
+          // For simplicity, we'll just add a single event for today/next occurrence.
+          // A full recurring event implementation is more involved.
+          const daysOfWeek = { "Lunes": 1, "Martes": 2, "Miércoles": 3, "Jueves": 4, "Viernes": 5, "Sábado": 6, "Domingo": 0 };
+          const today = new Date();
+          let nextOccurrence = new Date(today);
+          nextOccurrence.setDate(today.getDate() + (daysOfWeek[item.dia] + 7 - today.getDay()) % 7);
+          
+          const [startHour, startMinute] = item.hora.split(' ')[0].split(':').map(Number);
+          nextOccurrence.setHours(startHour, startMinute, 0, 0);
+
+          const classDuration = 2; // Assume 2 hours for classes
+          const classEnd = new Date(nextOccurrence.getTime() + classDuration * 60 * 60 * 1000);
+
+          const formatDateTime = (date) => {
+            return date.toISOString().replace(/[-:]|\.\d{3}/g, '').slice(0, 15) + 'Z';
+          };
+
+          icsContent += `BEGIN:VEVENT\n`;
+          icsContent += `UID:${Date.now()}-${Math.random().toString(36).substring(2, 9)}-clase\n`;
+          icsContent += `DTSTAMP:${formatDateTime(new Date())}\n`;
+          icsContent += `DTSTART:${formatDateTime(nextOccurrence)}\n`;
+          icsContent += `DTEND:${formatDateTime(classEnd)}\n`;
+          icsContent += `SUMMARY:Clase: ${item.materia} (${item.comision || 'Sin comisión'})\n`;
+          icsContent += `DESCRIPTION:Horario regular de clase.\n`;
+          // For recurring classes, a more robust solution would use RRULE:
+          // icsContent += `RRULE:FREQ=WEEKLY;BYDAY=${item.dia.substring(0,2).toUpperCase()}\n`;
+          icsContent += `END:VEVENT\n`;
+        }
+      });
+
+      icsContent += `END:VCALENDAR`;
+
+      const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'calendario_malla.ics';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // --- Gemini API Integration ---
+
+    // Function to call Gemini API
+    async function callGeminiAPI(prompt, targetElementId, title) {
+        const geminiResponseContent = document.getElementById('geminiResponseContent');
+        const geminiLoading = document.getElementById('geminiLoading');
+        const geminiError = document.getElementById('geminiError');
+        const geminiResponseTitle = document.getElementById('geminiResponseTitle');
+
+        geminiResponseTitle.textContent = title;
+        geminiResponseContent.innerHTML = ''; // Clear previous content
+        geminiLoading.classList.remove('hidden');
+        geminiError.classList.add('hidden');
+        openModal('modalGeminiResponse');
+
+        let chatHistory = [];
+        chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+        const payload = { contents: chatHistory };
+        const apiKey = ""; // Canvas will provide this at runtime
+
+        try {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                const text = result.candidates[0].content.parts[0].text;
+                geminiResponseContent.innerHTML = `<p>${text}</p>`;
+            } else {
+                geminiError.classList.remove('hidden');
+                geminiResponseContent.innerHTML = '';
+                console.error('Unexpected Gemini API response structure:', result);
+            }
+        } catch (error) {
+            geminiError.classList.remove('hidden');
+            geminiResponseContent.innerHTML = '';
+            console.error('Error calling Gemini API:', error);
+        } finally {
+            geminiLoading.classList.add('hidden');
+        }
+    }
+
+    // Event listener for "Obtener Más Información" button in subject modal
+    document.getElementById("getGeminiMateriaInfo").addEventListener("click", () => {
+        const materia = materiasPlan[materiaActual];
+        if (materia) {
+            const prompt = `Dame más información detallada, conceptos clave y posibles recursos adicionales (libros, cursos online, temas de investigación) sobre la materia "${materia.nombre}" que tiene el siguiente resumen: "${materia.resumen}". Enfócate en la relevancia de la materia para la carrera de sistemas.`;
+            callGeminiAPI(prompt, 'geminiResponseContent', `Información de ${materia.nombre}`);
+        }
+    });
+
+    // Event listener for "Expandir Elemento" button in agenda modal
+    document.getElementById("expandAgendaBtn").addEventListener("click", () => {
+        const agendaText = document.getElementById("agendaPersonalTextarea").value;
+        if (agendaText.trim() !== "") {
+            const prompt = `Expande el siguiente elemento de agenda o sugiere sub-tareas, ideas relacionadas, o una posible planificación para ello. Si es una tarea, desglósala en pasos. Si es una idea, genera conceptos afines: "${agendaText}"`;
+            callGeminiAPI(prompt, 'geminiResponseContent', 'Expansión de Agenda');
+        } else {
+            alert("Por favor, escribe algo en la agenda personal para expandir.");
+        }
+    });
 
   </script>
 </body>
